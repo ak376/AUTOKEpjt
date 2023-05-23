@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <ChartBTS msg="i'm BTS"/>
+    <ChartBTS msg="AUTOKE"/>
   
   </div>
 </template>

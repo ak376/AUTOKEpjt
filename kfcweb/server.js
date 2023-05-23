@@ -27,8 +27,8 @@ app.get('/', async (req, res) => {
 })
 
 io.on("connection", async (socket) => {
-    const ret = await pool.query("select * from sensing order by time desc");
-    socket.emit("kfc", ret[0]);
+    const ret = await pool.query("select * from sensing order by time desc limit 60");
+    socket.emit("fromser", ret[0]);
   
     socket.on("bbq", (arg) => {
       console.log(arg);

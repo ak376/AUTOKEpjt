@@ -2,7 +2,7 @@
   <div class="BTS">
     <h1>{{ msg }}</h1>
     <p>
-        BTS는 샴푸가 아닙니다.
+         beta ver. 1.1
     </p>
     <apexchart width="500" type="line" :options="options" :series="series" />
   </div>
@@ -34,9 +34,9 @@ export default {
   },
   created() {    
     this.socket = io("http://localhost:3000"); 
-    this.socket.on("kfc", (arg)=> {
+    this.socket.on("fromser", (arg)=> {
         console.log(arg);
-        this.times = arg.map((x) => moment(x.time).format("HH:mm:ss"));
+        this.times = arg.map((x) => moment(x.time).format("HH:mm"));
         this.temperatures = arg.map((x) => x.num1);
         this.humidities = arg.map((x) => x.num2);
         this.pressures = arg.map((x) => x.num3);
@@ -47,15 +47,15 @@ export default {
         };
         this.series = [
           {
-            name: "온도",
+            name: "압력: Pa",
             data: this.temperatures,
           },
           {
-            name: "습도",
+            name: "온도: °C",
             data: this.humidities,
           },
           {
-            name: "대기압",
+            name: "습도: %",
             data: this.pressures,
           }
         ]
