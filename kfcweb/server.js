@@ -21,13 +21,19 @@ app.use(
     })
 );
 
-app.get('/', async (req, res) => {
-  const ret = await pool.query("select * from sensing order by time desc limit 15");
-  res.send(ret[0]); 
+app.get('/email', async (req, res) => {
+  var data= req.param('add');
+  const ok = await pool.query("SHOW TABLES LIKE '"+data+"'");
+  if(ok[0]==''){
+    const mama = await pool.query("CREATE TABLE `userDB`.`" +data+"` (`email` VARCHAR(45) NOT NULL, `nick` VARCHAR(45) NOT NULL, `ip` VARCHAR(45) NOT NULL, `id` INT NOT NULL, PRIMARY KEY (`id`)));
+  }
+  //const ood = await pool.query("select * from "+data );
+  console.log(ok);
+  res.send(ok[0]); 
 })
 
 io.on("connection", async (socket) => {
-    const ret = await pool.query("select * from sensing order by time desc limit 60");
+    const ret = await pool.query("select * from sensing order by time desc limit 10");
     socket.emit("fromser", ret[0]);
   
     socket.on("bbq", (arg) => {
