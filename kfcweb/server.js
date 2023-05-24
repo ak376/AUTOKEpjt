@@ -23,12 +23,17 @@ app.use(
     extended: true,
   })
 );
-let ok;
+let ok; // 쿼리문날려서 들어오는거 받는 변수 ok
+
+//get통신으로 서버 3000포트 접속시 userDB 스키마 내부의 모든 테이블 확인
 app.get("/", async (req, res) => {
   const table = await pool.query("SHOW TABLES FROM userDB");
 
   res.send(table[0]);
 });
+
+// get 통신부분으로 3000번 포트 뒤에 email로 접근시 "add"로 계정명 전송
+// 계정이 있는경우에 테이블내부 값들 json값으로 반환
 app.get("/email", async (req, res) => {
   const data = req.param("add");
 
@@ -37,7 +42,7 @@ app.get("/email", async (req, res) => {
     const userdata = { result: ok[0] };
     //console.log(res);
     res.send(userdata);
-  } catch (error) {
+  } catch (error) { // 계정명 테이블이 없는경우 새로운 테이블생성
     try {
       const ok2 = await pool.query(
         "CREATE TABLE `userDB`." +
@@ -52,6 +57,28 @@ app.get("/email", async (req, res) => {
   }
 });
 
+
+// get통신부분으로 data 로 접근시 "ip"부분에 전처리된 ip주소할당
+// ip주소로 최근 10개 센서데이터  json 데이터로 반환
+app.get("/data", async (req, res) => {
+  let ip = req.param("ip");
+  ip="_"+ip;
+  try {
+    console.log(ip);
+    ok = await pool.query(
+      "SELECT * FROM `userDB`." + ip + " order by time DESC limit 10"
+    );
+    const userdata = { result: ok[0] };
+    //console.log(res);
+    res.send(userdata);
+  } catch (error) {
+    res.send("errorrrrr");
+  }
+});
+
+
+// 사용자가 nick과 ip 로 새로운 기기 등록part
+// post통신으로 add로 접근시 req.body내부를 {email, nick, ip}에 각 파싱
 app.post("/add", async (req, res) => {
   const { email, nick, ip } = req.body;
   console.log(req.userid);
@@ -68,6 +95,9 @@ app.post("/add", async (req, res) => {
   }
 });
 
+
+// 사용자 계정과 index값으로 최근순으로 몇번째 데이터인지 넘겨줌
+// rownum과 pk값으로 선택해서 delete 
 app.post("/delete", async (req, res) => {
   const { email, index } = req.body;
   console.log(email, index);
@@ -92,4 +122,3 @@ app.post("/delete", async (req, res) => {
 server.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
-
