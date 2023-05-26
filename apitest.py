@@ -16,11 +16,16 @@ from sense_hat import SenseHat
 from time import sleep
 import datetime
 import socket
+import json
+
+
+
+
 
 ## 기기  ip주소 반환하는부분
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(("8.8.8.8", 80))
-rpi_ip = '_' + s.getsockname()[0]
+rpi_ip ='_'+s.getsockname()[0]
 
 ##무빙하는 테스트 부분
 mh = Raspi_MotorHAT(addr=0x6f)
@@ -45,60 +50,63 @@ def closeDB(signal, frame):
     timer2.cancel()
     sys.exit(0)
 
+# def init():
+#     global cur, db, sense, rpi_ip
+#     rpi_ip = rpi_ip.replace('.','')
 
-def init():
-    global cur, db, sense, rpi_ip
-    rpi_ip = rpi_ip.replace('.', '')
+#     query= ("CREATE TABLE `userDB`.`" +rpi_ip +"` (`time` DATETIME NOT NULL, `pressure` DOUBLE NOT NULL, `temp` DOUBLE NOT NULL, `humidity` DOUBLE NOT NULL, `id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`))");
+#     lock.acquire()
+#     try:
+#         cur.execute(query)
+#         db.commit()
+#     except:
+#         query = ("DELETE FROM "+rpi_ip);
+#         cur.execute(query)
+#         db.commit()
+#         print("예외")
+    
+#     lock.release()
+    
 
-    query = (
-                "CREATE TABLE `userDB`.`" + rpi_ip + "` (`time` DATETIME NOT NULL, `pressure` DOUBLE NOT NULL, `temp` DOUBLE NOT NULL, `humidity` DOUBLE NOT NULL, `id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`))");
-    lock.acquire()
-    cur.execute(query)
-    db.commit()
-    lock.release()
+# def sensing():
+#     global cur, db, sense, rpi_ip
+    
+#     pressure = sense.get_pressure()
+#     temp = sense.get_temperature()
+#     humidity = sense.get_humidity()
+
+#     time = datetime.datetime.now()
+#     pressure = round(pressure / 1000, 3)
+#     temp = round(temp, 1)
+#     humidity = round(humidity, 1)
+
+#     rpi_ip = rpi_ip.replace('.','')
+#     query = "insert into "+rpi_ip+"(time, pressure, temp, humidity) values (%s, %s, %s, %s)"
+#     value = (time, pressure, temp, humidity)
+
+#     lock.acquire()
+#     cur.execute(query, value)
+#     db.commit()
+#     lock.release()
+
+#     global timer2
+#     timer2 = Timer(60, sensing)
+#     timer2.start()
+
+# db = mysql.connector.connect(host='43.201.32.249', user='admin', password='1234', database='userDB', auth_plugin='mysql_native_password')
+# cur = db.cursor()
+# ready = None
+# timer = None
+# sense = SenseHat()
+# timer2 = None
+# lock = Lock()
 
 
-def sensing():
-    global cur, db, sense, rpi_ip
-
-    pressure = sense.get_pressure()
-    temp = sense.get_temperature()
-    humidity = sense.get_humidity()
-
-    time = datetime.datetime.now()
-    pressure = round(pressure / 1000, 3)
-    temp = round(temp, 1)
-    humidity = round(humidity, 1)
-
-    rpi_ip = rpi_ip.replace('.', '')
-    query = "insert into " + rpi_ip + "(time, pressure, temp, humidity) values (%s, %s, %s, %s)"
-    value = (time, pressure, temp, humidity)
-
-    lock.acquire()
-    cur.execute(query, value)
-    db.commit()
-    lock.release()
-
-    global timer2
-    timer2 = Timer(60, sensing)
-    timer2.start()
-
-
-db = mysql.connector.connect(host='43.201.32.249', user='admin', password='1234', database='userDB',
-                             auth_plugin='mysql_native_password')
-cur = db.cursor()
-ready = None
-timer = None
+# signal.signal(signal.SIGINT, closeDB)
+# sensing()
 sense = SenseHat()
-timer2 = None
-lock = Lock()
-
-signal.signal(signal.SIGINT, closeDB)
-init()
-sensing()
-
 ##페이지
-PAGE = """\
+PAGE="""\
 <html>
 <head>
 <title>picamera MJPEG streaming demo</title>
@@ -114,6 +122,7 @@ PAGE = """\
 </body>
 </html>
 """
+
 
 
 class StreamingOutput(object):
@@ -132,54 +141,76 @@ class StreamingOutput(object):
                 self.condition.notify_all()
             self.buffer.seek(0)
         return self.buffer.write(buf)
-
-
-spd = 0
-lefrig = 375
-dir1 = 0.0
-
-
+spd=0
+lefrig=375
+dir1=0.0
 class StreamingHandler(server.BaseHTTPRequestHandler):
-
+    
     def do_GET(self):
-        if (self.path[1] == '?'):
+        if(self.path[1] =='?'):
             global spd
             global lefrig
             global dir1
             beforey = ((self.path).index('y'))
-            xx = float(self.path[4:beforey - 1])
-            yy = float(self.path[beforey + 2:])
-
-            print(xx, yy)
+            xx=float(self.path[4:beforey-1])
+            yy=float(self.path[beforey+2:])
+            
+            print(xx,yy)
             ## xx가 음수면 좌회전 양수면 우회전
-            if (xx == 0):
-                dir1 = 0
-            elif (xx < 0 and lefrig > 325):
+            if(xx==0):
+                dir1 =0
+            elif(xx<0 and lefrig>325):
                 dir1 += -7
-            elif (xx > 0 and lefrig < 410):
+            elif(xx>0 and lefrig<410):
                 dir1 += 5
+            
 
             ## 모터속도는 yy비율에 맞춰서 좌우회전은 20도씩 천천히
             lefrig = int(375 + dir1)
             pwm.setPWM(0, 0, lefrig)
-
-            print(lefrig, int(spd))
+            
+            
+            print(lefrig,int(spd))
             ## yy가 음수면 후진 양수면 전진
-            if (yy == 0):
-                spd = 0
-            elif (yy > 0 and spd <= 235 and yy <= 1):
-                spd += 20 * yy
-            elif (yy < 0 and spd >= -235 and yy >= -1):
-                spd += 20 * yy
+            if(yy==0):
+                spd=0
+            elif(yy>0 and spd<=235 and yy<=1):
+                spd += 20*yy
+            elif(yy<0 and spd >= -235 and yy>=-1):
+                spd += 20*yy
 
-            if (spd == 0):
+            if(spd==0):
                 myMotor.run(Raspi_MotorHAT.RELEASE)
-            elif (spd < 0):
+            elif(spd<0):
                 myMotor.setSpeed(abs(int(spd)))
                 myMotor.run(Raspi_MotorHAT.FORWARD)
-            elif (spd > 0):
+            elif(spd>0):
                 myMotor.setSpeed(abs(int(spd)))
-                myMotor.run(Raspi_MotorHAT.BACKWARD)
+                myMotor.run(Raspi_MotorHAT.BACKWARD)    
+        elif self.path == '/data':
+
+            global sense
+    
+            pressure = sense.get_pressure()
+            temp = sense.get_temperature()
+            humidity = sense.get_humidity()
+
+            pressure = round(pressure / 1000, 3)
+            temp = round(temp, 1)
+            humidity = round(humidity, 1)
+
+            tmp ={
+                "pressure": pressure,
+                "temp": temp,
+                "humidity": humidity
+            }
+            response=json.dumps(tmp)
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(response.encode('utf-8'))
+
         elif self.path == '/':
             self.send_response(301)
             self.send_header('Location', '/index.html')
@@ -217,12 +248,9 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
             self.send_error(404)
             self.end_headers()
 
-
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
-
-
 with picamera.PiCamera(resolution='1080x1440', framerate=24) as camera:
     output = StreamingOutput()
     camera.start_recording(output, format='mjpeg')
